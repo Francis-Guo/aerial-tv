@@ -22,8 +22,7 @@ import app.orchard.tv.system.SystemScreensaver
  *
  * Android removes an app's accessibility services from the enabled list whenever the app is
  * force-stopped, and Xiaomi's firmware force-stops every third-party app when the TV goes to
- * standby. With WRITE_SECURE_SETTINGS (a development permission tools/install.sh grants over ADB;
- * it cannot be granted any other way) Aerial can put the service back each time it starts.
+ * standby. With WRITE_SECURE_SETTINGS (a development permission the owner may grant over ADB) Aerial can put the service back each time it starts.
  */
 object GuardSetup {
     private const val TAG = "AerialGuard"
@@ -41,7 +40,6 @@ object GuardSetup {
     private const val KEY_KEEP_ADB = "keep_adb"
     private const val KEY_OWN_SCREENSAVER = "own_screensaver"
     private const val KEY_HOME_IN_FRONT = "home_in_front"
-    private const val KEY_INSTALLER_OPENED = "installer_opened_at"
     private const val KEY_SCREENSAVER_SWITCHED_OFF = "screensaver_switched_off"
     private const val KEY_SCREENSAVER_ENABLED = "screensaver_enabled"
 
@@ -56,30 +54,6 @@ object GuardSetup {
     fun wasHomeInFront(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_HOME_IN_FRONT, false)
 
-    /**
-     * Control Center opened the system installer on a new Aerial (update/Updates.kt). When the
-     * installer is done, Aerial has been replaced and its task is gone, so whatever was under it
-     * shows; on Xiaomi MiTV-MFTR0 that was a PatchWall details page, not its home activity. The
-     * guard of the new Aerial brings Home back then ([installerJustClosed]). Written at once: the
-     * install kills this process.
-     */
-    fun noteInstallerOpened(context: Context) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putLong(KEY_INSTALLER_OPENED, System.currentTimeMillis()).commit()
-    }
-
-    /** Whether Control Center opened the installer in the last 15 minutes; asks only once. */
-    fun installerJustClosed(context: Context): Boolean {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val at = prefs.getLong(KEY_INSTALLER_OPENED, 0L)
-        if (at == 0L) return false
-        prefs.edit().remove(KEY_INSTALLER_OPENED).apply()
-        return System.currentTimeMillis() - at in 0..15 * 60_000L
-    }
-
-    /**
-     * Some firmwares (Xiaomi) switch ADB debugging off on their own, usually around standby.
-     * When the owner opts in (tools/install.sh does, with KEEP_ADB=1), Aerial switches it back on.
-     */
     /**
      * Notes that the notification listener brought Aerial back after it was stopped. LeTV's eUI
      * (X43, issue #63) stops Aerial every few seconds to minutes; each time Aerial came back, saw
@@ -110,6 +84,7 @@ object GuardSetup {
             .split(',').mapNotNull { it.toLongOrNull() }.filter { now - it in 0..REVIVAL_WINDOW_MS && it >= bootedAt }
     }
 
+    /** Explicit opt-in: restore adb_enabled after firmware switches it off; disabled by default. */
     fun keepAdb(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_KEEP_ADB, false)
 

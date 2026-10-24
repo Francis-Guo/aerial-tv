@@ -217,4 +217,5 @@
     <string name="ss_videos_hint">Добавьте MP4 или MOV со страницы на телефоне. Просмотр без сети; если видео недоступны, показываются фото.</string>
     <string name="ss_system">Системная</string>
     <string name="ss_system_hint">Заставка самого телевизора, как задумал производитель (например, картины Xiaomi). Aerial свою не показывает.</string>
+    <string name="cc_setup_managed">Обновления и настройку с компьютера выполняет владелец устройства.</string>
 </resources>

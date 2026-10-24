@@ -107,6 +107,7 @@ class LiveFilm {
  * and the frame budget is the same as on a still Home. Kept to SDR even where the screensaver plays
  * Dolby Vision: a TV in Dolby Vision mode shows the tiles over it with Dolby's picture settings.
  */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun LiveWallpaper(
     moving: Boolean,

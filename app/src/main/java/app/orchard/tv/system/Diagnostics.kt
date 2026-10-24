@@ -46,7 +46,7 @@ object Diagnostics {
     )
 
     // AerialDiag is in DiagLog already; AerialWeather names the city.
-    private val LOG_TAGS = listOf("AerialGuard", "AerialUpdates", "AerialStream", "AerialWallpaper", "AerialKonkaSources", "AndroidRuntime")
+    private val LOG_TAGS = listOf("AerialGuard", "AerialStream", "AerialWallpaper", "AerialKonkaSources", "AndroidRuntime")
 
     fun report(context: Context): String = buildString {
         val pm = context.packageManager

@@ -65,7 +65,6 @@ import app.orchard.tv.system.Sounds
 import app.orchard.tv.system.SystemProbe
 import app.orchard.tv.system.LaunchFallback
 import app.orchard.tv.system.settingsLaunchIntent
-import app.orchard.tv.update.Updates
 import app.orchard.tv.weather.Weather
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -99,7 +98,6 @@ class MainActivity : ComponentActivity() {
             vm.refreshNetwork()
             Wallpapers.refreshDailyIfStale(networkCameUp = true)
             Weather.refreshIfStale(networkCameUp = true)
-            Updates.checkIfStale()
         }
         override fun onLost(network: Network) = runOnUiThread { vm.refreshNetwork() }
         override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) = runOnUiThread { vm.refreshNetwork() }
@@ -161,7 +159,6 @@ class MainActivity : ComponentActivity() {
         TileArtFactory.useCanvasDensity(canvasDensity(resources.displayMetrics))
         Wallpapers.init(this)
         Weather.init(this)
-        Updates.init(this)
         CustomIcons.init(this)
         SourceLooks.init(this)
         AerialSettings.init(this)
@@ -478,6 +475,8 @@ class MainActivity : ComponentActivity() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
+    // Preserve the public Activity key-dispatch callback; Core marks its bridge RestrictedApi.
+    @android.annotation.SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (locked) return super.dispatchKeyEvent(event)
         if (event.keyCode == dreamWokeKey) {
@@ -584,7 +583,6 @@ class MainActivity : ComponentActivity() {
         Wallpapers.refreshDailyIfStale()
         Wallpapers.rotateIfDue()
         Weather.refreshIfStale()
-        Updates.checkIfStale()
     }
 
     override fun onResume() {
@@ -595,7 +593,6 @@ class MainActivity : ComponentActivity() {
         restartIdleTimer()
         GuardSetup.setHomeInFront(this, true)
         HomeGuardService.onAerialResumed()
-        Updates.onHomeResumed()
         vm.refreshSystem()
         // Back in front by any route (Home was handled in onNewIntent, which runs first; Back from
         // the app lands here directly), so the next Home press is a Home-on-Home again.

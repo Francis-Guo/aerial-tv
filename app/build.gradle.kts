@@ -16,8 +16,8 @@ android {
         // Android 5.0. Compose 1.10 and later need 6.0, so the Compose BOM below stays on 1.9.
         minSdk = 21
         targetSdk = 34
-        versionCode = 45
-        versionName = "1.42"
+        versionCode = 46
+        versionName = "1.42-fei.1"
         // `./gradlew -Pdiag ...`: a build for one reporter's TV whose logcat shows no app lines;
         // see system/DiagLog.kt.
         val diag = project.hasProperty("diag")
@@ -37,9 +37,8 @@ android {
         }
     }
 
-    // The TVs only accept updates signed with the key Aerial was first installed with. That key
-    // lives outside version control in local/ (see docs/HANDOFF.md); without it the build falls
-    // back to this machine's debug key, which installs fresh but cannot update existing copies.
+    // Managed releases require the household's key in local/. Never silently use a debug key:
+    // the first installed signer determines which future APKs can update this installation.
     val signingProps = rootProject.file("local/signing.properties")
     signingConfigs {
         if (signingProps.exists()) {
@@ -58,7 +57,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.findByName("aerial") ?: signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("aerial")
+                ?: error("Managed releases require local/signing.properties; see docs/MANAGED-BUILD.zh-CN.md")
         }
     }
 
