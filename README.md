@@ -9,7 +9,7 @@
 - [APK 核验脚本](tools/verify-managed-apk.py)
 - [上游功能说明存档](docs/UPSTREAM-README.md)（其中远程安装与发布流程不适用于本分支）
 
-当前自用版本 `1.42-fei.1`（versionCode 46），最低 Android 5.0 / API 21。Release 必须使用所有者保管的独立签名，不回退到 debug 签名。
+当前自用版本 `1.42-fei.2`（versionCode 47），最低 Android 5.0 / API 21。Release 必须使用所有者保管的独立签名，不回退到 debug 签名。
 
 `keep_adb` 默认关闭，可以经所有者批准配置自动恢复；它保留系统电脑授权校验，不保证所有厂商固件都能恢复网络调试。已安装设备的实际配置记录保存在被 Git 忽略的 `local/` 中。
 

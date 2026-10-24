@@ -2,7 +2,21 @@
 
 维护仓库：`Francis-Guo/aerial-tv`，分支 `fei-managed`。
 初始上游基线：`pengchujin/aerial-tv@6b398b7c4e4251da764ab88b8f5973e59c603ae3`（v1.42）。
-自用版本：`1.42-fei.1`，versionCode `46`，包名保持 `app.orchard.tv`。
+自用版本：`1.42-fei.2`，versionCode `47`，包名保持 `app.orchard.tv`。
+
+## Android 6 桌面回退修复（1.42-fei.2）
+
+MiTV4-ANSM0 / Android 6.0.1 在首次安装并开启守护服务后，曾出现 Home 键可用，但应用退出后落到原厂桌面的情况。服务仍在运行；重连无障碍总开关后，日志记录到原厂桌面的窗口事件并成功接管。原实现只在开机前三分钟检查“已连接却收不到窗口事件”，会漏掉安装或稍后重连。
+
+此版本对 Android 6 及以下的每次服务连接都安排现有的 20 秒检查；收到事件则不处理，无事件时最多每进程重连一次。保持已有无障碍服务列表，短暂关闭再恢复总开关的行为与上游已有自愈逻辑一致。未新增权限，未禁用原厂桌面。
+
+诊断命令：
+
+```sh
+adb shell dumpsys activity service app.orchard.tv/.guard.HomeGuardService
+```
+
+可查看 `sawEvent`、`windowEventCount`、`deafRetried` 与 `lastWindow`，不会读取窗口文字。该修复针对已观察到的事件丢失；待机、重启和各应用的退出路径需要分别验收。
 
 ## 已做修改
 

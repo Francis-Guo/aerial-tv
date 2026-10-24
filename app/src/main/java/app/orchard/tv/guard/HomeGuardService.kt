@@ -26,6 +26,8 @@ import androidx.core.content.getSystemService
 import app.orchard.tv.MainActivity
 import app.orchard.tv.settings.AerialSettings
 import app.orchard.tv.system.SystemProbe
+import java.io.FileDescriptor
+import java.io.PrintWriter
 
 /**
  * Keeps Aerial as the home screen on firmwares that will not let a third-party app own HOME
@@ -81,16 +83,19 @@ class HomeGuardService : AccessibilityService() {
 
     /** Whether any window change has reached this binding. */
     private var sawEvent = false
+    private var windowEventCount = 0L
 
     /**
-     * On the same Mi TV 4 the guard bound at boot is sometimes deaf: bound, yet no window change
+     * On the same Mi TV 4 a new guard binding is sometimes deaf: bound, yet no window change
      * ever arrives, and only switching accessibility off and on again brings them (issue #318:
-     * rewriting the list of services was not enough). Up to Android 6, once per process.
+     * rewriting the list of services was not enough). Also observed after installation long after
+     * boot on MiTV4-ANSM0 / Android 6.0.1. Check every binding, not just the boot window;
+     * switching accessibility is still limited to once per process, up to Android 6.
      */
     private val deafCheck = Runnable {
         if (sawEvent || deafRetried) return@Runnable
         deafRetried = true
-        Log.i(TAG, "no window change since bound at boot; switching accessibility off and on")
+        Log.i(TAG, "no window change since bound; switching accessibility off and on")
         GuardSetup.restartAccessibility(this)
     }
 
@@ -222,6 +227,9 @@ class HomeGuardService : AccessibilityService() {
 
     override fun onServiceConnected() {
         instance = this
+        sawEvent = false
+        windowEventCount = 0L
+        handler.removeCallbacks(deafCheck)
         // Register before querying homes or checking the state so an unlock cannot be missed.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             registerReceiver(userUnlocked, IntentFilter(Intent.ACTION_USER_UNLOCKED))
@@ -237,7 +245,7 @@ class HomeGuardService : AccessibilityService() {
         contentResolver.registerContentObserver(Settings.Global.getUriFor(Settings.Global.ADB_ENABLED), false, adbObserver)
         contentResolver.registerContentObserver(Settings.Secure.getUriFor("screensaver_components"), false, screensaverObserver)
         GuardSetup.ensureAdb(this)
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M && SystemClock.elapsedRealtime() < BOOT_WINDOW_MS) {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
             handler.postDelayed(deafCheck, DEAF_AFTER_MS)
         }
         if (!GuardSetup.isUserUnlocked(this)) {
@@ -355,6 +363,15 @@ class HomeGuardService : AccessibilityService() {
     override fun onUnbind(intent: Intent?): Boolean {
         if (instance === this) instance = null
         return super.onUnbind(intent)
+    }
+
+    override fun dump(fd: FileDescriptor, writer: PrintWriter, args: Array<out String>) {
+        super.dump(fd, writer, args)
+        writer.println("Aerial Home guard:")
+        writer.println("  sawEvent=$sawEvent windowEventCount=$windowEventCount deafRetried=$deafRetried")
+        writer.println("  lastWindow=$lastWindow screenOff=$screenOff")
+        writer.println("  stockHomes=$stockHomes")
+        writer.println("  stockVisitAllowed=${SystemClock.uptimeMillis() < allowStockUntil}")
     }
 
     override fun onInterrupt() = Unit
@@ -554,6 +571,7 @@ class HomeGuardService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         sawEvent = true
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        windowEventCount++
         val pkg = event.packageName?.toString() ?: return
         val cls = event.className?.toString() ?: return
         // Only activities count as what is in front. Overlays and dialogs also raise this event:
